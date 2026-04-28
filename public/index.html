@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mise — Recipe Finder</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-row">
+      <div class="brand-mark" style="font-size: 1.4rem;">
+        Mise<span style="color: var(--terracotta);">·</span>en<span style="color: var(--terracotta);">·</span>place
+      </div>
+      <div class="user-chip">
+        <div class="avatar" id="avatar">·</div>
+        <span id="username">…</span>
+        <div class="logout-wrap">
+          <button class="btn-link" id="logoutBtn">Sign out</button>
+          <div class="logout-popover" id="logoutPopover">
+            <p>Sign out?</p>
+            <div class="logout-popover-actions">
+              <button class="logout-popover-confirm" id="logoutConfirm">Yes, sign out</button>
+              <button class="logout-popover-cancel" id="logoutCancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero container">
+      <div class="eyebrow">— Cook with what you have —</div>
+      <h1>Snap a photo. <em>Find a recipe.</em></h1>
+      <p>Upload a picture of your fridge, your pantry, or whatever's on the counter. We'll spot the ingredients and suggest dishes you can actually make.</p>
+    </section>
+
+    <!-- UPLOAD -->
+    <section class="upload-section container">
+      <div class="upload-card">
+        <label class="file-pick" id="filePick">
+          <div class="file-pick-icon">📸</div>
+          <div class="file-pick-text">Choose up to 3 photos</div>
+          <div class="file-pick-hint">JPG, PNG, WEBP, or HEIC — fridge, pantry, counter, anything</div>
+          <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp,image/heic" multiple />
+        </label>
+
+        <div class="image-tray" id="imageTray"></div>
+
+        <div class="upload-actions" id="uploadActions">
+          <button type="button" class="btn btn-ghost" id="resetBtn">Clear all</button>
+          <button type="button" class="btn btn-accent" id="identifyBtn">Identify ingredients</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- INGREDIENTS EDITOR -->
+    <section class="ingredients-section container" id="ingredientsSection">
+      <div class="section-header">
+        <h2>What we found</h2>
+        <span class="count" id="ingredientCount">0 ingredients</span>
+      </div>
+
+      <div class="chips" id="chips"></div>
+
+      <form class="add-chip-form" id="addForm">
+        <input type="text" id="addInput" placeholder="Add another ingredient…" />
+        <button type="submit">+ Add</button>
+      </form>
+
+      <button class="btn btn-accent" id="searchBtn" style="width: 100%; max-width: 320px; margin: 0 auto; display: flex;">Find recipes</button>
+    </section>
+
+    <!-- RECIPES GRID -->
+    <section class="recipes-section container" id="recipesSection">
+      <div class="section-header">
+        <h2>Recipe matches</h2>
+      </div>
+      <div class="loading" id="recipeStatus" style="display: none;"></div>
+      <div class="recipe-grid" id="recipeGrid"></div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

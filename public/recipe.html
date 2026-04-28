@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipe — Mise</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-row">
+      <div class="brand-mark" style="font-size: 1.4rem;">
+        Mise<span style="color: var(--terracotta);">·</span>en<span style="color: var(--terracotta);">·</span>place
+      </div>
+      <div class="user-chip">
+        <div class="avatar" id="avatar">·</div>
+        <span id="username">…</span>
+        <div class="logout-wrap">
+          <button class="btn-link" id="logoutBtn">Sign out</button>
+          <div class="logout-popover" id="logoutPopover">
+            <p>Sign out?</p>
+            <div class="logout-popover-actions">
+              <button class="logout-popover-confirm" id="logoutConfirm">Yes, sign out</button>
+              <button class="logout-popover-cancel" id="logoutCancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container recipe-detail">
+    <a href="/index.html" class="back-link">← Back to recipes</a>
+
+    <div id="status" class="loading">
+      <div class="spinner"></div>
+      <div>Loading recipe…</div>
+    </div>
+
+    <article id="detail" style="display: none;">
+      <div class="recipe-hero">
+        <img id="heroImg" alt="" />
+        <div>
+          <div class="eyebrow">— A dish from your pantry —</div>
+          <h1 id="title"></h1>
+          <div class="stat-strip">
+            <div class="stat">
+              <span class="stat-label">Ready in</span>
+              <span class="stat-value" id="readyIn">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Servings</span>
+              <span class="stat-value" id="servings">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Health</span>
+              <span class="stat-value" id="healthScore">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="recipe-body">
+        <section class="recipe-section">
+          <h2>Ingredients</h2>
+          <ul class="ingredient-list" id="ingredientList"></ul>
+        </section>
+
+        <section class="recipe-section">
+          <h2>Instructions</h2>
+          <div class="instructions-text" id="instructions"></div>
+        </section>
+      </div>
+
+      <section class="recipe-section" style="margin-top: 3rem;">
+        <h2>Nutrition</h2>
+        <div class="nutrition-grid" id="nutritionGrid"></div>
+      </section>
+    </article>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/recipe.js"></script>
+</body>
+</html>

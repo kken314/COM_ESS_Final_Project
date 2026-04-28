@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — Mise</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <div class="brand">
+      <div class="brand-mark">Mise<span>·</span>en<span>·</span>place</div>
+      <div class="brand-tag">Recipe Finder</div>
+    </div>
+
+    <h1>Welcome back</h1>
+    <p class="auth-subtitle">Sign in to start cooking with what you have.</p>
+
+    <div id="alert" class="alert"></div>
+
+    <form id="authForm" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" autocomplete="email" required />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required />
+      </div>
+
+      <button type="submit" id="submitBtn" class="btn btn-primary">Sign in</button>
+    </form>
+
+    <div class="auth-switch">
+      Don't have an account? <a href="/register.html">Create one</a>
+    </div>
+  </main>
+
+  <script>window.PAGE_MODE = 'login';</script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+</body>
+</html>
