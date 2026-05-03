@@ -9,10 +9,11 @@
 
 ## Part 0 — What Does This App Actually Do?
 
-1. You upload up to **3 photos** of your fridge / pantry / counter
-2. All 3 photos are sent to **Google Gemini AI** in one request — it reads all of them and lists every food ingredient it sees
+1. You **type ingredients directly** or upload up to **3 photos** of your fridge / pantry / counter
+2. If photos: they are sent to **Google Gemini AI** in one request — it reads all of them and lists every food ingredient it sees
 3. Those ingredients are sent to **Spoonacular** (a recipe database) — it returns recipes you can actually make
-4. Click any recipe to see the full instructions, ingredients, and nutrition
+4. Click any recipe to see the full instructions, ingredients (marked as "you have" or "to buy"), and nutrition
+5. Save any recipe to your **Favorites** — stored in your account and viewable on a dedicated page
 
 Simple idea. But it touches every layer of modern web development: HTML, CSS, JavaScript, HTTP, REST APIs, JWT authentication, MongoDB, AI APIs, file uploads, rate limiting, and more.
 
@@ -49,19 +50,22 @@ recipe-finder/
 │   ├── login.html        ← Login page
 │   ├── register.html     ← Register page
 │   ├── recipe.html       ← Single recipe detail page
+│   ├── favorites.html    ← Saved recipes page
 │   ├── css/
 │   │   └── style.css     ← All visual styling
 │   └── js/
 │       ├── api.js        ← HTTP communication layer (loaded on ALL pages)
 │       ├── auth.js       ← Login/register form logic
 │       ├── app.js        ← Main page logic
-│       └── recipe.js     ← Recipe detail page logic
+│       ├── recipe.js     ← Recipe detail page logic
+│       └── favorites.js  ← Saved recipes page logic
 │
 └── src/                  ← BACKEND — runs on the server, browser never sees this
     ├── app.js            ← Builds the Express server
     ├── config/
     │   ├── env.js        ← Loads and validates secret keys from .env
-    │   └── database.js   ← Connects to MongoDB
+    │   ├── database.js   ← Connects to MongoDB
+    │   └── rateLimit.js  ← Request-per-minute limits for each endpoint
     ├── models/
     │   └── User.js       ← Defines what a User looks like in the database
     ├── routes/
@@ -77,6 +81,7 @@ recipe-finder/
     │   └── spoonacular.service.js ← Talks to Spoonacular recipe API
     ├── middlewares/
     │   ├── auth.middleware.js     ← Checks if the user is logged in
+    │   ├── rateLimit.middleware.js ← Per-user request throttle stored in MongoDB
     │   ├── upload.middleware.js   ← Handles image file uploads (Multer)
     │   ├── validate.middleware.js ← Checks that request data is valid
     │   └── error.middleware.js    ← Catches ALL errors and formats them
@@ -201,6 +206,17 @@ const userSchema = new mongoose.Schema(
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,       // NEVER return this field unless explicitly requested
     },
+    rateLimit: {
+      count:   { type: Number, default: 0 },
+      resetAt: { type: Date,   default: () => new Date(0) }, // epoch = expired on first use
+    },
+    favorites: [
+      {
+        id:    { type: Number, required: true }, // Spoonacular recipe ID
+        title: { type: String, required: true },
+        image: { type: String, default: '' },
+      },
+    ],
   },
   { timestamps: true }     // Automatically adds createdAt and updatedAt fields
 );
@@ -346,12 +362,18 @@ Reading this line: `router.post('/register', validate(registerSchema), authContr
 ```javascript
 router.use(authenticate);  // applies to EVERY route below this line
 
-router.post('/identify', upload,                    recipeController.identifyIngredients);
-router.post('/search',   validate(searchSchema),    recipeController.searchRecipes);
-router.get('/:id',       validate(recipeIdSchema, 'params'), recipeController.getRecipe);
+router.post('/identify',    rateLimit(IDENTIFY), upload,                 recipeController.identifyIngredients);
+router.post('/search',      rateLimit(SEARCH),   validate(searchSchema), recipeController.searchRecipes);
+router.get('/favorites',                                                  recipeController.getFavorites);
+router.post('/:id/favorite',                     validate(recipeIdSchema, 'params'), recipeController.toggleFavorite);
+router.get('/:id',          rateLimit(RECIPE),   validate(recipeIdSchema, 'params'), recipeController.getRecipe);
 ```
 
 `router.use(authenticate)` is placed at the top, so authentication runs before any recipe handler. You can't reach any recipe endpoint without a valid JWT token.
+
+`rateLimit(N)` is applied only to endpoints that call external APIs (Gemini, Spoonacular). Favorites endpoints hit only MongoDB, so they have no rate limit.
+
+`'/favorites'` **must be declared before `'/:id'`**. Express matches routes in order. If `/:id` came first, a request to `/favorites` would match it with `req.params.id = "favorites"` — wrong. Putting the exact string `/favorites` first ensures it's matched before the wildcard.
 
 `'/:id'` is a **URL parameter** — a wildcard. A `GET` request to `/api/recipes/12345` sets `req.params.id = "12345"` inside the controller. The colon `:` is the signal that this is a variable, not a literal string.
 
@@ -479,6 +501,44 @@ And Joi checks every incoming request against those rules. If `email` is `"notan
 **`stripUnknown: true`** is a security measure. If someone sends `{ email: "a@b.com", password: "123456", isAdmin: true }`, Joi silently removes `isAdmin` before the data reaches the controller. The controller only ever sees the fields you explicitly allowed.
 
 **`source = 'body'` vs `source = 'params'`** — the same middleware works for both the request body and URL parameters. For `GET /api/recipes/12345`, you'd call `validate(recipeIdSchema, 'params')` to validate `req.params.id`.
+
+---
+
+#### `rateLimit.middleware.js` — The Request Throttle
+
+```javascript
+const rateLimit = (limit) => asyncHandler(async (req, res, next) => {
+  const now = new Date();
+  const user = await User.findById(req.user.id);
+
+  if (user.rateLimit.resetAt <= now) {
+    // Window expired — start a fresh 60-second window
+    user.rateLimit.count = 1;
+    user.rateLimit.resetAt = new Date(now.getTime() + 60_000);
+  } else if (user.rateLimit.count >= limit) {
+    const waitSec = Math.ceil((user.rateLimit.resetAt - now) / 1000);
+    throw new ApiError(429, `Rate limit reached. Try again in ${waitSec}s.`);
+  } else {
+    user.rateLimit.count += 1;
+  }
+
+  await user.save();
+  req.rateLimit = { limit, remaining: limit - user.rateLimit.count };
+  next();
+});
+```
+
+**What is a token bucket?**
+Each user gets N tokens per minute. Every request spends one token. When the bucket is empty, requests are rejected until the minute resets. The "bucket" here is just two numbers stored on the User document in MongoDB: `count` (tokens used) and `resetAt` (when the window expires).
+
+**Why store it in MongoDB instead of memory?**
+If you store the count in a JavaScript variable (in-memory), it resets every time the server restarts and won't work if you ever run multiple server instances. Storing it in MongoDB means the count survives restarts and is consistent across all instances.
+
+**`rateLimit(limit)` is a factory function** — it returns a middleware function. `rateLimit(5)` returns a middleware that allows 5 requests/minute. `rateLimit(20)` allows 20. This is the same higher-order function pattern as `validate(schema)`.
+
+**`req.rateLimit = { limit, remaining }`** — attaches the rate limit info to the request so the controller can include it in the response. The identify endpoint uses this to tell the frontend how many scans are left.
+
+**Limits are configured in `src/config/rateLimit.js`** — edit that file to change the values without touching the middleware or routes.
 
 ---
 
@@ -910,7 +970,9 @@ async function request(path, { method = 'GET', body, isFormData = false } = {}) 
       window.location.href = '/login.html';
     }
     const msg = (data && data.message) || `Request failed (${res.status})`;
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = res.status; // attach status code so callers can check err.status === 429
+    throw err;
   }
 
   return data;
@@ -937,6 +999,10 @@ const Api = {
     request('/recipes/search', { method: 'POST', body: { ingredients } }),
 
   getRecipe: (id) => request(`/recipes/${id}`),
+
+  getFavorites: () => request('/recipes/favorites'),
+  toggleFavorite: (id, title, image) =>
+    request(`/recipes/${id}/favorite`, { method: 'POST', body: { title, image } }),
 };
 ```
 
@@ -1123,6 +1189,12 @@ SERVER
    → req.user = { id: "64abc...", username: "john" }
    → next()
 
+5b. rateLimit(5) middleware runs
+   → User.findById(req.user.id) → loads the user's rateLimit { count, resetAt }
+   → resetAt is in the past? reset count to 1, set resetAt = now + 60s
+   → count >= 5? throw ApiError(429, "Rate limit reached. Try again in Xs.")
+   → otherwise: count++ → save → req.rateLimit = { limit: 5, remaining: 4 } → next()
+
 6. upload middleware (Multer) runs
    → parses the multipart/form-data body
    → checks each file's MIME type against the allowed list
@@ -1230,8 +1302,10 @@ LOGOUT:
 | **base64** | Encoding binary as ASCII text | `gemini.service.js` → `buffer.toString('base64')` |
 | **REST API** | URL + HTTP method = action convention | `src/routes/` |
 | **async/await** | "Wait here until the Promise resolves" | Almost every function |
-| **Rate limiting** | API enforcing request count limits | `gemini.service.js` retry logic |
-| **Higher-order function** | Function that returns another function | `asyncHandler`, `validate` |
+| **Rate limiting** | API enforcing request count limits | `gemini.service.js` retry logic, `rateLimit.middleware.js` |
+| **Token bucket** | Per-user counter stored in DB — N requests allowed per minute | `rateLimit.middleware.js`, `User.js` |
+| **Favorites** | Recipes saved to the user's MongoDB document | `User.js`, `recipe.controller.js`, `favorites.js` |
+| **Higher-order function** | Function that returns another function | `asyncHandler`, `validate`, `rateLimit` |
 | **Environment variables** | Secrets stored outside source code | `src/config/env.js`, `.env` |
 
 ---
@@ -1246,8 +1320,8 @@ LOGOUT:
   register.html     │    Auth  → localStorage (token, user)        │
   index.html  ──►   │    Api   → fetch wrapper (attaches JWT)       │
   recipe.html ──►   │         │                                     │
-                    │  auth.js       app.js         recipe.js       │
-                    │  (login form)  (main page)    (recipe detail) │
+  favorites.html ►  │  auth.js   app.js   recipe.js  favorites.js  │
+                    │  (login)   (main)   (detail)   (saved list)  │
                     └──────────────┬────────────────────────────────┘
                                    │  HTTP (fetch)
                                    │  Authorization: Bearer <JWT>
@@ -1265,6 +1339,7 @@ LOGOUT:
                     │         │                   │                 │
                     │    /auth routes        /recipes routes        │
                     │         │               authenticate ◄─ JWT   │
+                    │         │               rateLimit (MongoDB)   │
                     │         │               upload (Multer)       │
                     │         │               validate              │
                     │         │                   │                 │
@@ -1286,8 +1361,10 @@ If you want to fully understand this codebase, read the files in this order:
 1. `public/js/api.js` — understand how browser and server communicate
 2. `src/app.js` — understand how the server is structured
 3. `src/middlewares/auth.middleware.js` — understand JWT
-4. `src/models/User.js` — understand password hashing
-5. `src/services/gemini.service.js` — understand the multi-image AI call and retry logic
-6. `public/js/app.js` — trace the full upload-to-recipe flow in the browser
+4. `src/models/User.js` — understand password hashing, favorites storage, and rate limit fields
+5. `src/middlewares/rateLimit.middleware.js` + `src/config/rateLimit.js` — understand per-user throttling
+6. `src/services/gemini.service.js` — understand the multi-image AI call and retry logic
+7. `public/js/app.js` — trace the full upload-to-recipe flow in the browser
+8. `public/js/favorites.js` — understand the favorites page
 
-Everything else connects through those six files.
+Everything else connects through those eight files.
