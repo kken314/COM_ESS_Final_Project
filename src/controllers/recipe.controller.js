@@ -1,6 +1,7 @@
 // src/controllers/recipe.controller.js
 const geminiService = require('../services/gemini.service');
 const spoonacularService = require('../services/spoonacular.service');
+const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 
@@ -42,4 +43,39 @@ const getRecipe = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { identifyIngredients, searchRecipes, getRecipe };
+// GET /api/recipes/favorites
+// Returns the current user's saved favorite recipes.
+const getFavorites = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  res.status(200).json({
+    success: true,
+    data: { favorites: user.favorites },
+  });
+});
+
+// POST /api/recipes/:id/favorite
+// Toggles a recipe in/out of the user's favorites list.
+const toggleFavorite = asyncHandler(async (req, res) => {
+  const recipeId = parseInt(req.params.id, 10);
+  const { title, image } = req.body;
+
+  const user = await User.findById(req.user.id);
+  const existingIdx = user.favorites.findIndex((f) => f.id === recipeId);
+
+  let isFavorited;
+  if (existingIdx >= 0) {
+    user.favorites.splice(existingIdx, 1);
+    isFavorited = false;
+  } else {
+    user.favorites.push({ id: recipeId, title, image });
+    isFavorited = true;
+  }
+
+  await user.save();
+  res.status(200).json({
+    success: true,
+    data: { isFavorited, favorites: user.favorites },
+  });
+});
+
+module.exports = { identifyIngredients, searchRecipes, getRecipe, getFavorites, toggleFavorite };

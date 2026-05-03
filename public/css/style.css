@@ -748,6 +748,33 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   white-space: nowrap;
 }
 
+.ing-summary {
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ing-summary-have { color: var(--olive); font-weight: 500; }
+.ing-summary-missing { color: var(--muted); }
+
+.ing-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ingredient-list li.ing-have .ing-dot { background: var(--olive); }
+.ingredient-list li.ing-missing .ing-dot { background: var(--line); }
+.ingredient-list li.ing-missing { color: var(--muted); }
+
 .instructions-text {
   font-size: 1.02rem;
   line-height: 1.75;
@@ -789,6 +816,91 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   font-family: 'Fraunces', serif;
   font-size: 1.2rem;
   font-weight: 500;
+}
+
+/* ---------- Header nav ---------- */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.nav-link {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.nav-link:hover { color: var(--terracotta); text-decoration: none; }
+.nav-link.active { color: var(--terracotta); }
+
+/* ---------- Recipe card image wrapper + heart button ---------- */
+.recipe-card-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.favorite-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+  z-index: 1;
+  line-height: 1;
+}
+
+.favorite-btn:hover { background: var(--paper); color: var(--terracotta); transform: scale(1.1); }
+.favorite-btn.favorited { color: var(--terracotta); }
+.favorite-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* ---------- Favorite button on recipe detail page ---------- */
+.btn-favorite {
+  margin-top: 1.5rem;
+  background: transparent;
+  border: 1.5px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-favorite:hover { border-color: var(--terracotta); color: var(--terracotta); background: var(--error-bg); }
+.btn-favorite.favorited { border-color: var(--terracotta); color: var(--terracotta); background: var(--error-bg); }
+.btn-favorite:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ---------- Favorites page ---------- */
+.favorites-hero {
+  padding: 4rem 0 2rem;
+  text-align: center;
+}
+
+.favorites-hero h1 em {
+  color: var(--terracotta);
+  font-weight: 400;
+}
+
+.favorites-section {
+  padding: 1rem 0 5rem;
 }
 
 /* ---------- Responsive ---------- */

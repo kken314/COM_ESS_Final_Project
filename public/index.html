@@ -12,6 +12,10 @@
       <div class="brand-mark" style="font-size: 1.4rem;">
         Mise<span style="color: var(--terracotta);">·</span>en<span style="color: var(--terracotta);">·</span>place
       </div>
+      <nav class="header-nav">
+        <a href="/index.html" class="nav-link active">Find recipes</a>
+        <a href="/favorites.html" class="nav-link">Favorites</a>
+      </nav>
       <div class="user-chip">
         <div class="avatar" id="avatar">·</div>
         <span id="username">…</span>
@@ -57,10 +61,10 @@
     </section>
 
     <!-- INGREDIENTS EDITOR -->
-    <section class="ingredients-section container" id="ingredientsSection">
+    <section class="ingredients-section container show" id="ingredientsSection">
       <div class="section-header">
-        <h2>What we found</h2>
-        <span class="count" id="ingredientCount">0 ingredients</span>
+        <h2>Your ingredients</h2>
+        <span class="count" id="ingredientCount"></span>
       </div>
 
       <div class="chips" id="chips"></div>

@@ -1,8 +1,15 @@
 // public/js/app.js
 // Main app page: image upload → ingredient detection → recipe search.
 
-(function () {
+(async function () {
   Auth.requireLogin();
+
+  // Load user's favorites before rendering anything so heart states are correct.
+  let userFavorites = new Set();
+  try {
+    const favResult = await Api.getFavorites();
+    userFavorites = new Set(favResult.data.favorites.map((f) => f.id));
+  } catch { /* non-fatal — hearts just won't be pre-filled */ }
 
   // ---------- Image resize helper ----------
   async function resizeImage(file, maxDimension = 1280, quality = 0.85) {
@@ -130,6 +137,7 @@
   }
 
   restoreSession();
+  if (ingredients.length === 0) renderChips(); // set initial "0 ingredients" count
 
   // ---------- File handling ----------
   function handleFiles(e) {
@@ -212,8 +220,7 @@
     ingredients    = [];
     currentRecipes = [];
     renderImageTray();
-    chips.innerHTML = '';
-    ingredientsSection.classList.remove('show');
+    renderChips(); // clears chips and resets count
     recipesSection.classList.remove('show');
     recipeGrid.innerHTML = '';
     sessionStorage.removeItem(SESSION_KEY);
@@ -320,7 +327,10 @@
       const card = document.createElement('article');
       card.className = 'recipe-card';
       card.innerHTML = `
-        <img class="recipe-card-img" alt="" />
+        <div class="recipe-card-img-wrap">
+          <img class="recipe-card-img" alt="" />
+          <button class="favorite-btn" aria-label="Save recipe">&#9825;</button>
+        </div>
         <div class="recipe-card-body">
           <h3 class="recipe-card-title"></h3>
           <div class="recipe-card-meta">
@@ -332,6 +342,34 @@
       card.querySelector('img').src = r.image || '';
       card.querySelector('img').alt = r.title;
       card.querySelector('h3').textContent = r.title;
+
+      const favBtn = card.querySelector('.favorite-btn');
+      if (userFavorites.has(r.id)) {
+        favBtn.classList.add('favorited');
+        favBtn.innerHTML = '&#9829;';
+        favBtn.setAttribute('aria-label', 'Remove from favorites');
+      }
+
+      favBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+          const res = await Api.toggleFavorite(r.id, r.title, r.image || '');
+          if (res.data.isFavorited) {
+            userFavorites.add(r.id);
+            favBtn.classList.add('favorited');
+            favBtn.innerHTML = '&#9829;';
+            favBtn.setAttribute('aria-label', 'Remove from favorites');
+          } else {
+            userFavorites.delete(r.id);
+            favBtn.classList.remove('favorited');
+            favBtn.innerHTML = '&#9825;';
+            favBtn.setAttribute('aria-label', 'Save recipe');
+          }
+        } catch (err) {
+          alert('Could not update favorites: ' + err.message);
+        }
+      });
+
       card.addEventListener('click', () => {
         window.location.href = `/recipe.html?id=${r.id}`;
       });

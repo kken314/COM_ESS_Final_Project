@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Favorites — Mise</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-row">
+      <div class="brand-mark" style="font-size: 1.4rem;">
+        Mise<span style="color: var(--terracotta);">·</span>en<span style="color: var(--terracotta);">·</span>place
+      </div>
+      <nav class="header-nav">
+        <a href="/index.html" class="nav-link">Find recipes</a>
+        <a href="/favorites.html" class="nav-link active">Favorites</a>
+      </nav>
+      <div class="user-chip">
+        <div class="avatar" id="avatar">·</div>
+        <span id="username">…</span>
+        <div class="logout-wrap">
+          <button class="btn-link" id="logoutBtn">Sign out</button>
+          <div class="logout-popover" id="logoutPopover">
+            <p>Sign out?</p>
+            <div class="logout-popover-actions">
+              <button class="logout-popover-confirm" id="logoutConfirm">Yes, sign out</button>
+              <button class="logout-popover-cancel" id="logoutCancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="favorites-hero container">
+      <div class="eyebrow">— Your collection —</div>
+      <h1>Saved <em>recipes</em></h1>
+    </section>
+
+    <section class="favorites-section container">
+      <div id="favStatus" class="loading">
+        <div class="spinner"></div>
+        <div>Loading favorites…</div>
+      </div>
+      <div class="recipe-grid" id="favGrid"></div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/favorites.js"></script>
+</body>
+</html>

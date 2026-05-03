@@ -18,4 +18,9 @@ const recipeIdSchema = Joi.object({
   id: Joi.number().integer().positive().required(),
 });
 
-module.exports = { searchSchema, recipeIdSchema };
+const favoriteBodySchema = Joi.object({
+  title: Joi.string().trim().min(1).max(200).required(),
+  image: Joi.string().allow('').max(500).default(''),
+});
+
+module.exports = { searchSchema, recipeIdSchema, favoriteBodySchema };

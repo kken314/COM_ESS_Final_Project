@@ -53,3 +53,14 @@ All async controllers are wrapped in `asyncHandler` (`src/utils/asyncHandler.js`
 **JWT 401 redirect guard:** `api.js`'s `request()` only redirects to `/login.html` on a 401 response if a token already exists in localStorage. This prevents the login form itself from redirecting away when credentials are wrong.
 
 **Password field:** The `password` field on the `User` schema has `select: false` — it is never returned from queries unless explicitly opted in with `.select('+password')` (only done in `auth.service.js` during login).
+
+**Favorites:** Saved recipes are stored directly on the `User` document as a `favorites` array of `{ id, title, image }` objects — no separate collection. The Spoonacular numeric ID is used as the key. Toggle endpoint (`POST /api/recipes/:id/favorite`) adds the recipe if absent, removes it if present. The auth middleware sets `req.user` to the JWT payload `{ id, username, iat, exp }` — use `req.user.id` (not `req.user._id`) when querying MongoDB. The favorites fetch on the recipe detail page is non-critical: if it fails the recipe still renders, just with the heart button defaulting to unsaved.
+
+## Pages
+
+| File | Purpose |
+|---|---|
+| `public/index.html` + `app.js` | Main flow: upload → identify → search → recipe grid |
+| `public/recipe.html` + `recipe.js` | Recipe detail: ingredients, instructions, nutrition, favorite button |
+| `public/favorites.html` + `favorites.js` | Saved recipes grid; heart button removes inline |
+| `public/login.html` + `register.html` + `auth.js` | Auth pages |

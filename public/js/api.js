@@ -72,6 +72,10 @@ const Api = {
   searchRecipes: (ingredients) =>
     request('/recipes/search', { method: 'POST', body: { ingredients } }),
   getRecipe: (id) => request(`/recipes/${id}`),
+
+  getFavorites: () => request('/recipes/favorites'),
+  toggleFavorite: (id, title, image) =>
+    request(`/recipes/${id}/favorite`, { method: 'POST', body: { title, image } }),
 };
 
 // Expose globally so other scripts can use them.

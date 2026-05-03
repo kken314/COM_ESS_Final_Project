@@ -50,13 +50,21 @@
   async function load() {
     try {
       const result = await Api.getRecipe(id);
-      render(result.data.recipe);
+
+      let isFavorited = false;
+      try {
+        const favResult = await Api.getFavorites();
+        const ids = new Set(favResult.data.favorites.map((f) => f.id));
+        isFavorited = ids.has(parseInt(id, 10));
+      } catch { /* favorites state is non-critical — recipe still renders */ }
+
+      render(result.data.recipe, isFavorited);
     } catch (err) {
       status.innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`;
     }
   }
 
-  function render(recipe) {
+  function render(recipe, isFavorited) {
     document.title = `${recipe.title} — Mise`;
 
     document.getElementById('heroImg').src = recipe.image || '';
@@ -67,22 +75,62 @@
       ? `${recipe.readyInMinutes} min` : '—';
     document.getElementById('healthScore').textContent = recipe.healthScore ?? '—';
 
-    // Ingredients
+    // Ingredients — compare against user's session ingredients to show have/missing
+    let userIngredients = [];
+    try {
+      const raw = sessionStorage.getItem('mise_session');
+      if (raw) userIngredients = JSON.parse(raw).ingredients || [];
+    } catch {}
+
     const ingredientList = document.getElementById('ingredientList');
     ingredientList.innerHTML = '';
+
+    let haveCount = 0;
+    let missingCount = 0;
+
     (recipe.extendedIngredients || []).forEach((ing) => {
       const li = document.createElement('li');
-      const name = document.createElement('span');
-      name.textContent = ing.name || ing.original;
+      const ingName = (ing.name || '').toLowerCase();
+
+      if (userIngredients.length > 0) {
+        const have = userIngredients.some((u) => {
+          const ul = u.toLowerCase();
+          return ingName.includes(ul) || ul.includes(ingName);
+        });
+        li.className = have ? 'ing-have' : 'ing-missing';
+        have ? haveCount++ : missingCount++;
+      }
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'ing-name';
+      if (userIngredients.length > 0) {
+        const dot = document.createElement('span');
+        dot.className = 'ing-dot';
+        nameSpan.appendChild(dot);
+      }
+      nameSpan.appendChild(document.createTextNode(ing.name || ing.original));
+
       const amount = document.createElement('span');
       amount.className = 'ingredient-amount';
       amount.textContent = ing.measures && ing.measures.us
         ? `${ing.measures.us.amount} ${ing.measures.us.unitShort || ''}`.trim()
         : (ing.original || '');
-      li.appendChild(name);
+
+      li.appendChild(nameSpan);
       li.appendChild(amount);
       ingredientList.appendChild(li);
     });
+
+    // Show have/missing summary above the list when user has session data
+    if (userIngredients.length > 0) {
+      const summary = document.createElement('p');
+      summary.className = 'ing-summary';
+      summary.innerHTML =
+        `<span class="ing-summary-have">&#10003; ${haveCount} you have</span>` +
+        ` &nbsp;·&nbsp; ` +
+        `<span class="ing-summary-missing">&#10007; ${missingCount} to buy</span>`;
+      ingredientList.before(summary);
+    }
 
     // Instructions
     const instructionsEl = document.getElementById('instructions');
@@ -124,6 +172,29 @@
         nutritionGrid.appendChild(cell);
       });
     }
+
+    // Favorite button
+    const favBtn = document.getElementById('favoriteBtn');
+    let favorited = isFavorited;
+
+    function updateFavBtn() {
+      favBtn.innerHTML = favorited ? '&#9829; Saved' : '&#9825; Save recipe';
+      favBtn.classList.toggle('favorited', favorited);
+    }
+    updateFavBtn();
+
+    favBtn.addEventListener('click', async () => {
+      favBtn.disabled = true;
+      try {
+        const res = await Api.toggleFavorite(recipe.id, recipe.title, recipe.image || '');
+        favorited = res.data.isFavorited;
+        updateFavBtn();
+      } catch (err) {
+        alert('Could not update favorites: ' + err.message);
+      } finally {
+        favBtn.disabled = false;
+      }
+    });
 
     status.style.display = 'none';
     detail.style.display = 'block';
