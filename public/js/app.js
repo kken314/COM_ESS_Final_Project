@@ -89,8 +89,9 @@
   const fileInput    = document.getElementById('imageInput');
   const imageTray    = document.getElementById('imageTray');
   const uploadActions = document.getElementById('uploadActions');
-  const identifyBtn  = document.getElementById('identifyBtn');
-  const resetBtn     = document.getElementById('resetBtn');
+  const identifyBtn   = document.getElementById('identifyBtn');
+  const identifyQuota = document.getElementById('identifyQuota');
+  const resetBtn      = document.getElementById('resetBtn');
 
   const ingredientsSection = document.getElementById('ingredientsSection');
   const chips              = document.getElementById('chips');
@@ -244,6 +245,13 @@
       const result = await Api.identifyIngredients(filesToUpload);
       ingredients = result.data.ingredients;
 
+      if (result.data.rateLimit && result.data.rateLimit.remaining === 0) {
+        identifyQuota.textContent = 'Limit reached — try again soon';
+        identifyQuota.className = 'identify-quota identify-quota-empty';
+      } else {
+        identifyQuota.textContent = '';
+      }
+
       if (ingredients.length === 0) {
         alert('No ingredients detected. Try clearer photos of your food.');
       } else {
@@ -252,7 +260,12 @@
         ingredientsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     } catch (err) {
-      alert('Could not identify ingredients: ' + err.message);
+      if (err.status === 429) {
+        identifyQuota.textContent = 'Limit reached — try again soon';
+        identifyQuota.className = 'identify-quota identify-quota-empty';
+      } else {
+        alert('Could not identify ingredients: ' + err.message);
+      }
     } finally {
       identifyBtn.disabled = false;
       identifyBtn.textContent = originalText;

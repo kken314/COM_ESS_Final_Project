@@ -54,7 +54,9 @@ async function request(path, { method = 'GET', body, isFormData = false } = {}) 
       window.location.href = '/login.html';
     }
     const msg = (data && data.message) || `Request failed (${res.status})`;
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
   }
 
   return data;

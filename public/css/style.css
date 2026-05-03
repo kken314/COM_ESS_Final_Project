@@ -475,6 +475,22 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   margin-top: 0.25rem;
 }
 
+.identify-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.identify-quota {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.identify-quota-empty {
+  color: var(--terracotta);
+}
+
 /* ---------- Ingredients editor ---------- */
 .ingredients-section {
   padding: 2rem 0;

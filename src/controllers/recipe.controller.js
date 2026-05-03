@@ -17,7 +17,7 @@ const identifyIngredients = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: { ingredients },
+    data: { ingredients, rateLimit: req.rateLimit },
   });
 });
 
