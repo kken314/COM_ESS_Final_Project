@@ -93,12 +93,13 @@
   const identifyQuota = document.getElementById('identifyQuota');
   const resetBtn      = document.getElementById('resetBtn');
 
-  const ingredientsSection = document.getElementById('ingredientsSection');
-  const chips              = document.getElementById('chips');
-  const ingredientCount    = document.getElementById('ingredientCount');
-  const addInput           = document.getElementById('addInput');
-  const addForm            = document.getElementById('addForm');
-  const searchBtn          = document.getElementById('searchBtn');
+  const ingredientsSection    = document.getElementById('ingredientsSection');
+  const chips                 = document.getElementById('chips');
+  const ingredientCount       = document.getElementById('ingredientCount');
+  const clearIngredientsBtn   = document.getElementById('clearIngredientsBtn');
+  const addInput              = document.getElementById('addInput');
+  const addForm               = document.getElementById('addForm');
+  const searchBtn             = document.getElementById('searchBtn');
 
   const recipesSection = document.getElementById('recipesSection');
   const recipeGrid     = document.getElementById('recipeGrid');
@@ -293,8 +294,14 @@
     ingredientCount.textContent =
       ingredients.length === 1 ? '1 ingredient' : `${ingredients.length} ingredients`;
     searchBtn.disabled = ingredients.length === 0;
+    clearIngredientsBtn.style.display = ingredients.length > 0 ? '' : 'none';
     saveSession();
   }
+
+  clearIngredientsBtn.addEventListener('click', () => {
+    ingredients = [];
+    renderChips();
+  });
 
   addForm.addEventListener('submit', (e) => {
     e.preventDefault();
