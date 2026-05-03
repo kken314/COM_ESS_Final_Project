@@ -36,7 +36,7 @@ Route → [middleware chain] → Controller → Service → (DB / external API)
 ```
 
 - **Routes** (`src/routes/`) only declare which middleware and controller handle each URL.
-- **Middlewares** (`src/middlewares/`) run before controllers: `authenticate` (JWT check), `upload` (Multer, keeps files in RAM as Buffers via `memoryStorage`), `validate` (Joi schema check).
+- **Middlewares** (`src/middlewares/`) run before controllers: `authenticate` (JWT check), `rateLimit` (per-user token bucket stored in MongoDB), `upload` (Multer, keeps files in RAM as Buffers via `memoryStorage`), `validate` (Joi schema check).
 - **Controllers** (`src/controllers/`) receive the request, call one service method, send the response. No business logic.
 - **Services** (`src/services/`) contain all business logic and external API calls.
 
@@ -55,6 +55,10 @@ All async controllers are wrapped in `asyncHandler` (`src/utils/asyncHandler.js`
 **Password field:** The `password` field on the `User` schema has `select: false` — it is never returned from queries unless explicitly opted in with `.select('+password')` (only done in `auth.service.js` during login).
 
 **Favorites:** Saved recipes are stored directly on the `User` document as a `favorites` array of `{ id, title, image }` objects — no separate collection. The Spoonacular numeric ID is used as the key. Toggle endpoint (`POST /api/recipes/:id/favorite`) adds the recipe if absent, removes it if present. The auth middleware sets `req.user` to the JWT payload `{ id, username, iat, exp }` — use `req.user.id` (not `req.user._id`) when querying MongoDB. The favorites fetch on the recipe detail page is non-critical: if it fails the recipe still renders, just with the heart button defaulting to unsaved.
+
+**Rate limiting:** Per-user token bucket stored on the `User` document (`rateLimit: { count, resetAt }`). Limits are defined in `src/config/rateLimit.js` — edit that file to change values. Only endpoints that call external APIs are rate limited: `IDENTIFY` (5 RPM, Gemini), `SEARCH` and `RECIPE` (20 RPM, Spoonacular). Favorites endpoints are not rate limited (MongoDB only). When a 429 is returned, `api.js` attaches `err.status` so callers can distinguish it from other errors without parsing the message string.
+
+**Type-first ingredients:** The ingredients section is always visible on the main page — users can type and search recipes without uploading any photos. The upload flow is additive, not required.
 
 ## Pages
 

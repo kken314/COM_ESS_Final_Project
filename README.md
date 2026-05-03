@@ -42,14 +42,17 @@ recipe-finder/
 
 ## Setup
 
-### 1. Install MongoDB locally
+### 1. Set up MongoDB
 
-If you don't have it yet, install MongoDB Community Edition:
+**Recommended — MongoDB Atlas (cloud, free tier):**
+1. Create a free cluster at https://mongodb.com/atlas
+2. Under **Network Access**, add your IP (or `0.0.0.0/0` for dev)
+3. Copy the connection string — it looks like `mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/recipe-finder?appName=Cluster0`
+
+**Alternative — local MongoDB:**
 - **Mac**: `brew tap mongodb/brew && brew install mongodb-community && brew services start mongodb-community`
-- **Windows**: Download installer from https://www.mongodb.com/try/download/community
-- **Linux**: Follow https://www.mongodb.com/docs/manual/administration/install-on-linux/
-
-Verify it's running: `mongosh` should connect without error.
+- **Windows**: Download from https://www.mongodb.com/try/download/community
+- Use `mongodb://localhost:27017/recipe-finder` as your `MONGODB_URI`
 
 ### 2. Get API keys
 
@@ -80,12 +83,12 @@ Open http://localhost:3000 in your browser.
 ## How it works
 
 1. User registers / logs in → gets a JWT stored in `localStorage`
-2. User uploads an image → sent to backend via `multipart/form-data`
-3. Backend's Multer middleware → memory buffer
-4. `geminiService.identifyIngredients()` → Gemini 2.5 Flash with `responseSchema` enforcing JSON array
-5. Returns ingredient list to frontend → user can edit (remove / add)
-6. User clicks "Find recipes" → `spoonacularService.findByIngredients()`
-7. User clicks a recipe → loads full info via `spoonacularService.getRecipeInformation()` (instructions + nutrition)
+2. User types ingredients directly **or** uploads up to 3 photos
+3. If photos: Multer buffers them → `geminiService.identifyIngredients()` → Gemini Vision returns ingredient list
+4. User edits the ingredient list (add / remove chips), then clicks "Find recipes"
+5. `spoonacularService.findByIngredients()` → recipe grid with "you have / missing" counts
+6. User clicks a recipe → full info via `spoonacularService.getRecipeInformation()` — ingredient list shows which items the user has (green dot) vs needs to buy (grey dot)
+7. User can save any recipe to their Favorites — stored on the User document in MongoDB
 
 ---
 
@@ -95,9 +98,11 @@ Open http://localhost:3000 in your browser.
 |---|---|---|---|---|
 | POST | `/api/auth/register` | — | `{ username, email, password }` | Create account |
 | POST | `/api/auth/login`    | — | `{ email, password }`           | Sign in, returns JWT |
-| POST | `/api/recipes/identify` | Bearer | `multipart/form-data` field `image` | Detect ingredients |
-| POST | `/api/recipes/search`   | Bearer | `{ ingredients: [...] }` | Find matching recipes |
-| GET  | `/api/recipes/:id`      | Bearer | — | Full recipe info |
+| POST | `/api/recipes/identify`      | Bearer | `multipart/form-data` field `images` | Detect ingredients from photos (rate limited: 5 RPM) |
+| POST | `/api/recipes/search`        | Bearer | `{ ingredients: [...] }` | Find matching recipes (rate limited: 20 RPM) |
+| GET  | `/api/recipes/favorites`     | Bearer | — | Get saved recipes |
+| POST | `/api/recipes/:id/favorite`  | Bearer | `{ title, image }` | Toggle save/unsave a recipe |
+| GET  | `/api/recipes/:id`           | Bearer | — | Full recipe info (rate limited: 20 RPM) |
 | GET  | `/api/health` | — | — | Health check |
 
 ---
@@ -105,6 +110,7 @@ Open http://localhost:3000 in your browser.
 ## Things to know
 
 - **Spoonacular free tier limit**: 150 points/day. `findByIngredients` is 1 point, `getRecipeInformation` (with nutrition) is also 1 point. So ~75 recipe views/day on the free tier.
-- **Gemini free tier**: also limited but more generous. Check https://ai.google.dev/pricing for current quotas.
+- **Gemini free tier**: 15 RPM on Gemini 1.5 Flash. Check https://ai.google.dev/pricing for current quotas.
+- **Rate limiting**: Per-user token bucket stored in MongoDB. Limits are configured in `src/config/rateLimit.js`. Identify is capped at 5 RPM per user to stay within Gemini's 15 RPM global limit.
 - **Image size limit**: 5MB per upload (configured in `src/middlewares/upload.middleware.js`).
 - **JWT lifetime**: 7 days by default (configurable via `JWT_EXPIRES_IN`).
