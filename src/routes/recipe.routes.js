@@ -18,10 +18,10 @@ const router = express.Router();
 router.use(authenticate);
 
 // POST /api/recipes/identify — 5 RPM per user (Gemini 1.5 Flash global limit is 15 RPM)
-router.post('/identify', rateLimit(rateLimitConfig.IDENTIFY), upload, recipeController.identifyIngredients);
+router.post('/identify', rateLimit(rateLimitConfig.IDENTIFY, 'identify'), upload, recipeController.identifyIngredients);
 
 // POST /api/recipes/search
-router.post('/search', rateLimit(rateLimitConfig.SEARCH), validate(searchSchema), recipeController.searchRecipes);
+router.post('/search', rateLimit(rateLimitConfig.SEARCH, 'search'), validate(searchSchema), recipeController.searchRecipes);
 
 // GET /api/recipes/favorites  (MongoDB only — no rate limit needed)
 router.get('/favorites', recipeController.getFavorites);
@@ -37,7 +37,7 @@ router.post(
 // GET /api/recipes/:id
 router.get(
   '/:id',
-  rateLimit(rateLimitConfig.RECIPE),
+  rateLimit(rateLimitConfig.RECIPE, 'recipe'),
   validate(recipeIdSchema, 'params'),
   recipeController.getRecipe
 );

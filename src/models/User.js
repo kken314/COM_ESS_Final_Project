@@ -27,8 +27,18 @@ const userSchema = new mongoose.Schema(
       select: false, // Don't return password in queries by default.
     },
     rateLimit: {
-      count:   { type: Number, default: 0 },
-      resetAt: { type: Date,   default: () => new Date(0) }, // epoch = always expired on first use
+      identify: {
+        count:   { type: Number, default: 0 },
+        resetAt: { type: Date,   default: () => new Date(0) },
+      },
+      search: {
+        count:   { type: Number, default: 0 },
+        resetAt: { type: Date,   default: () => new Date(0) },
+      },
+      recipe: {
+        count:   { type: Number, default: 0 },
+        resetAt: { type: Date,   default: () => new Date(0) },
+      },
     },
     favorites: [
       {
