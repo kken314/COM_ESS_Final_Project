@@ -26,6 +26,49 @@
   --success:    #5a6843;
 }
 
+/* ---------- Dark theme ---------- */
+[data-theme="dark"] {
+  --cream:      #1c1816;
+  --cream-2:    #241f1c;
+  --paper:      #2c2622;
+  --ink:        #ede8df;
+  --ink-soft:   #b5a99c;
+  --muted:      #7a6f66;
+  --line:       #3d3632;
+  --error-bg:   #3a1a14;
+  --error:      #e07060;
+  --success-bg: #1c2d16;
+  --success:    #7a9a5a;
+}
+
+/* ---------- Theme toggle button ---------- */
+.theme-toggle {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+.theme-toggle:hover { color: var(--terracotta); }
+
+.theme-toggle-float {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 200;
+  background: var(--paper);
+  border: 1px solid var(--line) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  width: 36px;
+  height: 36px;
+  border-radius: 50% !important;
+}
+
 html, body { height: 100%; }
 
 body {
