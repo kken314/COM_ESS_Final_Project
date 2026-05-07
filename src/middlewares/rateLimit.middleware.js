@@ -15,13 +15,17 @@ const rateLimit = (limit, bucket) => asyncHandler(async (req, res, next) => {
     slot.resetAt = new Date(now.getTime() + 60_000);
   } else if (slot.count >= limit) {
     const waitSec = Math.ceil((slot.resetAt - now) / 1000);
-    throw new ApiError(429, `Rate limit reached. Try again in ${waitSec}s.`);
+    return res.status(429).json({
+      success: false,
+      message: `Rate limit reached. Try again in ${waitSec}s.`,
+      data: { limit, resetAt: slot.resetAt },
+    });
   } else {
     slot.count += 1;
   }
 
   await user.save();
-  req.rateLimit = { limit, remaining: limit - slot.count };
+  req.rateLimit = { limit, remaining: limit - slot.count, resetAt: slot.resetAt };
   next();
 });
 

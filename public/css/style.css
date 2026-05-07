@@ -562,6 +562,17 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   color: var(--terracotta);
 }
 
+.identify-limit-msg {
+  display: none;
+  font-size: 0.8rem;
+  color: var(--error);
+  margin-top: 0.25rem;
+}
+
+.identify-limit-msg.show {
+  display: block;
+}
+
 /* ---------- Ingredients editor ---------- */
 .ingredients-section {
   padding: 2rem 0;

@@ -56,6 +56,7 @@ async function request(path, { method = 'GET', body, isFormData = false } = {}) 
     const msg = (data && data.message) || `Request failed (${res.status})`;
     const err = new Error(msg);
     err.status = res.status;
+    err.data = data;
     throw err;
   }
 

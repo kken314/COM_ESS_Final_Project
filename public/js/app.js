@@ -90,8 +90,37 @@
   const imageTray    = document.getElementById('imageTray');
   const uploadActions = document.getElementById('uploadActions');
   const identifyBtn   = document.getElementById('identifyBtn');
-  const identifyQuota = document.getElementById('identifyQuota');
-  const resetBtn      = document.getElementById('resetBtn');
+  const identifyQuota    = document.getElementById('identifyQuota');
+  const identifyLimitMsg = document.getElementById('identifyLimitMsg');
+  const resetBtn         = document.getElementById('resetBtn');
+
+  var _quotaTimer = null;
+  function startQuotaCountdown(used, limit, resetAt, isEmpty) {
+    if (_quotaTimer) clearInterval(_quotaTimer);
+    var end = new Date(resetAt).getTime();
+    function tick() {
+      var sec = (end - Date.now()) / 1000;
+      if (sec <= 0) {
+        clearInterval(_quotaTimer);
+        _quotaTimer = null;
+        identifyQuota.textContent = '';
+        identifyLimitMsg.textContent = '';
+        identifyLimitMsg.classList.remove('show');
+        return;
+      }
+      identifyQuota.textContent = `${used}/${limit} · resets in ${Math.ceil(sec)}s`;
+    }
+    tick();
+    _quotaTimer = setInterval(tick, 150);
+    identifyQuota.className = isEmpty ? 'identify-quota identify-quota-empty' : 'identify-quota';
+    if (isEmpty) {
+      identifyLimitMsg.textContent = 'Identify limit exceeded. Please wait for the cooldown.';
+      identifyLimitMsg.classList.add('show');
+    } else {
+      identifyLimitMsg.textContent = '';
+      identifyLimitMsg.classList.remove('show');
+    }
+  }
 
   const ingredientsSection    = document.getElementById('ingredientsSection');
   const chips                 = document.getElementById('chips');
@@ -246,11 +275,9 @@
       const result = await Api.identifyIngredients(filesToUpload);
       ingredients = result.data.ingredients;
 
-      if (result.data.rateLimit && result.data.rateLimit.remaining === 0) {
-        identifyQuota.textContent = 'Limit reached — try again soon';
-        identifyQuota.className = 'identify-quota identify-quota-empty';
-      } else {
-        identifyQuota.textContent = '';
+      const rl = result.data.rateLimit;
+      if (rl) {
+        startQuotaCountdown(rl.limit - rl.remaining, rl.limit, rl.resetAt, rl.remaining === 0);
       }
 
       if (ingredients.length === 0) {
@@ -262,8 +289,13 @@
       }
     } catch (err) {
       if (err.status === 429) {
-        identifyQuota.textContent = 'Limit reached — try again soon';
-        identifyQuota.className = 'identify-quota identify-quota-empty';
+        const rl = err.data && err.data.data;
+        if (rl && rl.resetAt) {
+          startQuotaCountdown(rl.limit, rl.limit, rl.resetAt, true);
+        } else {
+          identifyQuota.textContent = 'Limit reached — try again soon';
+          identifyQuota.className = 'identify-quota identify-quota-empty';
+        }
       } else {
         alert('Could not identify ingredients: ' + err.message);
       }
