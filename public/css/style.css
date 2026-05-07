@@ -645,6 +645,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   padding: 0.65rem 1rem;
   font-family: inherit;
   font-size: 0.95rem;
+  color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 100px;
   background: var(--paper);
